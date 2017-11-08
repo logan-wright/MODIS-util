@@ -53,7 +53,7 @@ from modis-util import FIND_MODIS
 #
 # on date 2014-10-17
 
-date     = datetime.datetime(2014, 10, 17)
+date = datetime.datetime(2014, 10, 17)
 
 # the following function call will find the Aqua MODIS granules (from 10:00AM to 12:00AM)
 # that contain the input flight track points on 2014-10-17
@@ -62,9 +62,3 @@ granules = FIND_MODIS(date, tmhr, lon, lat, satID='aqua', tmhr_range=[10.0, 12.0
 # the following function will download the found granules
 DOWNLOAD_MODIS(granules)
 ```
-
-
-
-
-
-
