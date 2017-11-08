@@ -29,6 +29,10 @@ projection centered at polygon centroid is used for each MODIS granule.
 
 #### Available functions
 
+- `READ_GEOMETA`
+
+- `GEOMETA`
+
 - `FIND_MODIS`
 
 - `DOWNLOAD_MODIS`
