@@ -1,3 +1,10 @@
+# Find and download MODIS granules
+# by Hong Chen (me@hongchen.cz)
+#
+# Tested on macOS v10.12.3 with
+# - Python v3.6.0
+
+
 import os
 import sys
 import glob
