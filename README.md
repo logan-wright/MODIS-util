@@ -42,7 +42,11 @@ import datetime
 from modis-util import FIND_MODIS
 
 # assume we read in some flight track info here
-# longitude: lon, latitude: lat, time in hour: tmhr
+#
+#  - time in hour: tmhr
+#  - longitude: lon
+#  - latitude: lat
+#
 # on date 2014-10-17
 
 date     = datetime.datetime(2014, 10, 17)
