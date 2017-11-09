@@ -35,6 +35,8 @@ projection centered at polygon centroid is used for each MODIS granule.
 
 - `FIND_MODIS` (function)
 
+- `EARTH_VIEW` (function)
+
 - `DOWNLOAD_MODIS` (function)
 
 ---
