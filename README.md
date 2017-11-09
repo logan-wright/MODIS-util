@@ -29,13 +29,13 @@ projection centered at polygon centroid is used for each MODIS granule.
 
 #### Available functions
 
-- `READ_GEOMETA`
+- `READ_GEOMETA` (function)
 
-- `GEOMETA`
+- `FTP_INIT` (class)
 
-- `FIND_MODIS`
+- `FIND_MODIS` (function)
 
-- `DOWNLOAD_MODIS`
+- `DOWNLOAD_MODIS` (function)
 
 ---
 
@@ -43,7 +43,7 @@ projection centered at polygon centroid is used for each MODIS granule.
 
 ```python
 import datetime
-from modis-util import FIND_MODIS
+from modis-util import FIND_MODIS, FTP_INIT
 
 # assume we read in some flight track info here
 #
@@ -59,6 +59,9 @@ date = datetime.datetime(2014, 9, 11)
 # that contain the input flight track points on 2014-10-17
 granules = FIND_MODIS(date, tmhr, lon, lat, satID='aqua', tmhr_range=[10.0, 12.0])
 
+# define a ftp instance
+ftp_init = FTP_INIT(granules)
+
 # the following function will download the found granules
-DOWNLOAD_MODIS(granules)
+DOWNLOAD_MODIS(ftp_init)
 ```
