@@ -254,17 +254,19 @@ class READ_ICT_HSK:
 
     def __init__(self, date, fdir='/Users/hoch4240/Chen/work/01_ARISE/comp2/data/hsk'):
 
-        self.date = date
+        date_s = date.strftime('%Y%m%d')
+        self.date   = date
+        self.date_s = date_s
 
-        fnames = glob.glob('%s/*%s*' % (fdir, date))
+        fnames = glob.glob('%s/*%s*' % (fdir, date_s))
         Nfiles = len(fnames)
         if Nfiles == 1:
             fname = fnames[0]
         elif Nfiles > 1:
             fname = fnames[0]
-            print("Warning [READ_ICT_HSK]: found more than 1 file for %s." % date)
+            print("Warning [READ_ICT_HSK]: found more than 1 file for %s." % date_s)
         else:
-            exit('Error [READ_ICT_HSK]: no file found for %s' % date)
+            exit('Error [READ_ICT_HSK]: no file found for %s' % date_s)
 
         f = open(fname, 'r')
         firstLine = f.readline()
@@ -293,14 +295,96 @@ class READ_ICT_HSK:
         for i, vname in enumerate(vnames):
             self.data[vname] = data[:, i]
 
-if __name__ == '__main__':
+def EARTH_VIEW(data, tmhr, lon, lat):
 
-    hsk  = READ_ICT_HSK('20140913')
+    lon[lon>180.0] -= 360.0
+    logic  = (tmhr>=0.0)&(tmhr<48.0) & (lon>=-180.0)&(lon<=180.0) & (lat>=-90.0)&(lat<=90.0)
+
+    tmhr   = tmhr[logic]
+    lon    = lon[logic]
+    lat    = lat[logic]
+
+    rcParams['font.size'] = 8.0
+
+    proj_ori = ccrs.PlateCarree()
+    for i, line in enumerate(data):
+
+        xx0  = np.array([line['GRingLongitude1'], line['GRingLongitude2'], line['GRingLongitude3'], line['GRingLongitude4'], line['GRingLongitude1']])
+        yy0  = np.array([line['GRingLatitude1'] , line['GRingLatitude2'] , line['GRingLatitude3'] , line['GRingLatitude4'] , line['GRingLatitude1']])
+
+        if (abs(xx0[0]-xx0[1])>180.0) | (abs(xx0[0]-xx0[2])>180.0) | \
+           (abs(xx0[0]-xx0[3])>180.0) | (abs(xx0[1]-xx0[2])>180.0) | \
+           (abs(xx0[1]-xx0[3])>180.0) | (abs(xx0[2]-xx0[3])>180.0):
+
+            xx0[xx0<0.0] += 360.0
+
+        xx = xx0[:-1]
+        yy = yy0[:-1]
+        center_lon = xx.mean()
+        center_lat = yy.mean()
+
+        # second attempt to find the center point of MODIS granule
+        # +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+        proj_tmp   = ccrs.Orthographic(central_longitude=center_lon, central_latitude=center_lat)
+        LonLat_tmp = proj_tmp.transform_points(proj_ori, xx, yy)[:, [0, 1]]
+        center_xx  = LonLat_tmp[:, 0].mean(); center_yy = LonLat_tmp[:, 1].mean()
+        center_lon, center_lat = proj_ori.transform_point(center_xx, center_yy, proj_tmp)
+        # ---------------------------------------------------------------------
+
+        proj_new = ccrs.Orthographic(central_longitude=center_lon, central_latitude=center_lat)
+        LonLat_in = proj_new.transform_points(proj_ori, lon, lat)[:, [0, 1]]
+        LonLat_modis  = proj_new.transform_points(proj_ori, xx0, yy0)[:, [0, 1]]
+
+        ax = plt.axes(projection=proj_new)
+        ax.set_global()
+        ax.stock_img()
+        ax.coastlines(color='gray', lw=0.2)
+        title = data[i]['GranuleID'].decode('UTF-8')
+        ax.set_title(title, fontsize=8)
+
+        modis_granule  = mpl_path.Path(LonLat_modis, closed=True)
+        pointsIn       = modis_granule.contains_points(LonLat_in)
+        percentIn      = float(pointsIn.sum()) / float(pointsIn.size) * 100.0
+        if (percentIn > 0):
+            patch = patches.PathPatch(modis_granule, facecolor='g', edgecolor='g', alpha=0.4, lw=0.2)
+        else:
+            patch = patches.PathPatch(modis_granule, facecolor='k', edgecolor='k', alpha=0.2, lw=0.2)
+
+        cs = ax.scatter(lon, lat, transform=ccrs.Geodetic(), s=0.01, c=tmhr, cmap='jet')
+        ax.scatter(xx.mean(), yy.mean(), marker='*', transform=ccrs.Geodetic(), s=6, c='r')
+        ax.scatter(center_lon, center_lat, marker='*', transform=ccrs.Geodetic(), s=6, c='b')
+        ax.add_patch(patch)
+        plt.colorbar(cs, shrink=0.6)
+        plt.savefig('%s.png' % '.'.join(title.split('.')[:-1]))
+        plt.close()
+
+    # ---------------------------------------------------------------------
+
+if __name__ == '__main__':
+    import matplotlib as mpl
+    import matplotlib.pyplot as plt
+    from matplotlib.ticker import FixedLocator
+    import cartopy.crs as ccrs
+    from matplotlib import rcParams
+    import matplotlib.patches as patches
+
+    date = datetime.datetime(2014, 9, 7)
+    # date = datetime.datetime(2014, 9, 13)
+
+    hsk  = READ_ICT_HSK(date)
     tmhr = (hsk.data['Start_UTC']/3600.0)[::10]
     lon  = hsk.data['Longitude'][::10]
     lat  = hsk.data['Latitude'][::10]
 
-    date = datetime.datetime(2014, 9, 13)
-    data = FIND_MODIS(date, tmhr, lon, lat, satID='terra')
+    data = READ_GEOMETA(date)
+    EARTH_VIEW(data, tmhr, lon, lat)
+    exit()
+
+
+    for satID in ['aqua', 'terra']:
+        # data = FIND_MODIS(date, tmhr, lon, lat, satID=satID, tmhr_range=[20.0, 21.0])
+        data = FIND_MODIS(date, tmhr, lon, lat, satID=satID, tmhr_range=[20.5, 23.0])
+        EARTH_VIEW(data, tmhr, lon, lat)
+    exit()
     ftp_init = FTP_INIT(data)
     DOWNLOAD_MODIS(ftp_init)
