@@ -1,9 +1,10 @@
-# Find and download MODIS granules
+# Purpose:
+#   Find and download MODIS granules
+#
 # by Hong Chen (me@hongchen.cz)
 #
-# Tested on macOS v10.12.3 with
-# - Python v3.6.0
-
+# Tested on macOS v10.12.6 with
+#   - Python v3.6.0
 
 import os
 import sys
@@ -15,6 +16,31 @@ import cartopy.crs as ccrs
 import ftplib
 
 def READ_GEOMETA(date, satID='aqua', fdir='/Users/hoch4240/Chen/mygit/MODIS-util/data/geoMeta/6'):
+    """
+    output:
+        GeoMeta data of MODIS that contains the input points, e.g. flight track.
+
+        data['GranuleID'].decode('UTF-8') to get the file name of MODIS granule
+        data['StartDateTime'].decode('UTF-8') to get the time stamp of MODIS granule
+
+        GranuleID
+        StartDateTime
+        ArchiveSet
+        OrbitNumber
+        DayNightFlag
+        EastBoundingCoord
+        NorthBoundingCoord
+        SouthBoundingCoord
+        WestBoundingCoord
+        GRingLongitude1
+        GRingLongitude2
+        GRingLongitude3
+        GRingLongitude4
+        GRingLatitude1
+        GRingLatitude2
+        GRingLatitude3
+        GRingLatitude4
+    """
 
     fdir = '%s/%s/%4.4d' % (fdir, satID.upper(), date.year)
 
@@ -72,24 +98,6 @@ def FIND_MODIS(date, tmhr, lon, lat, satID='aqua', percentIn_threshold=0.0, tmhr
 
         data['GranuleID'].decode('UTF-8') to get the file name of MODIS granule
         data['StartDateTime'].decode('UTF-8') to get the time stamp of MODIS granule
-
-            GranuleID
-            StartDateTime
-            ArchiveSet
-            OrbitNumber
-            DayNightFlag
-            EastBoundingCoord
-            NorthBoundingCoord
-            SouthBoundingCoord
-            WestBoundingCoord
-            GRingLongitude1
-            GRingLongitude2
-            GRingLongitude3
-            GRingLongitude4
-            GRingLatitude1
-            GRingLatitude2
-            GRingLatitude3
-            GRingLatitude4
     """
 
     lon[lon>180.0] -= 360.0
@@ -119,7 +127,6 @@ def FIND_MODIS(date, tmhr, lon, lat, satID='aqua', percentIn_threshold=0.0, tmhr
     else:
         indices = np.arange(Ndata)
     # ---------------------------------------------------------------------
-
 
     # loop through all the "MODIS granules" constructed through four corner points
     # and find which granules contain the input data
@@ -169,7 +176,7 @@ def FIND_MODIS(date, tmhr, lon, lat, satID='aqua', percentIn_threshold=0.0, tmhr
 
     return data[indices_find]
 
-class GEOMETA:
+class FTP_INIT:
 
     def __init__(self, data):
 
@@ -198,9 +205,14 @@ class GEOMETA:
 
         self.namePatterns = namePatterns
 
-def DOWNLOAD_MODIS(data, fdirOut=os.getcwd(), verbose=True):
+def DOWNLOAD_MODIS(ftp_init, fdirOut=os.getcwd(), verbose=True):
 
     """
+    input:
+        data: FTP_INIT object instance
+
+    output:
+        N/A
     """
 
     if not os.path.isdir(fdirOut):
@@ -213,8 +225,7 @@ def DOWNLOAD_MODIS(data, fdirOut=os.getcwd(), verbose=True):
     except ftplib.all_errors:
         exit('Error [DOWNLOAD_MODIS]: cannot FTP to %s.' % ftpSite)
 
-    gmeta = GEOMETA(data)
-    for namePattern in gmeta.namePatterns:
+    for namePattern in ftp_init.namePatterns:
         words = namePattern.split('/')
         ftpFdir = '/'.join(words[:-1])
         pattern = words[-1]
@@ -291,5 +302,5 @@ if __name__ == '__main__':
 
     date = datetime.datetime(2014, 9, 13)
     data = FIND_MODIS(date, tmhr, lon, lat, satID='terra')
-    # data_obj = GEOMETA(data)
-    DOWNLOAD_MODIS(data)
+    ftp_init = FTP_INIT(data)
+    DOWNLOAD_MODIS(ftp_init)
