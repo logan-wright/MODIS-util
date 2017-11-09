@@ -297,6 +297,7 @@ class READ_ICT_HSK:
 
 def EARTH_VIEW(data, tmhr, lon, lat):
 
+
     lon[lon>180.0] -= 360.0
     logic  = (tmhr>=0.0)&(tmhr<48.0) & (lon>=-180.0)&(lon<=180.0) & (lat>=-90.0)&(lat<=90.0)
 
@@ -361,30 +362,22 @@ def EARTH_VIEW(data, tmhr, lon, lat):
     # ---------------------------------------------------------------------
 
 if __name__ == '__main__':
+
     import matplotlib as mpl
     import matplotlib.pyplot as plt
-    from matplotlib.ticker import FixedLocator
-    import cartopy.crs as ccrs
     from matplotlib import rcParams
     import matplotlib.patches as patches
 
     date = datetime.datetime(2014, 9, 7)
-    # date = datetime.datetime(2014, 9, 13)
 
     hsk  = READ_ICT_HSK(date)
     tmhr = (hsk.data['Start_UTC']/3600.0)[::10]
     lon  = hsk.data['Longitude'][::10]
     lat  = hsk.data['Latitude'][::10]
 
-    data = READ_GEOMETA(date)
-    EARTH_VIEW(data, tmhr, lon, lat)
-    exit()
-
-
     for satID in ['aqua', 'terra']:
-        # data = FIND_MODIS(date, tmhr, lon, lat, satID=satID, tmhr_range=[20.0, 21.0])
         data = FIND_MODIS(date, tmhr, lon, lat, satID=satID, tmhr_range=[20.5, 23.0])
         EARTH_VIEW(data, tmhr, lon, lat)
-    exit()
+
     ftp_init = FTP_INIT(data)
     DOWNLOAD_MODIS(ftp_init)
