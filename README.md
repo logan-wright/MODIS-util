@@ -61,6 +61,9 @@ date = datetime.datetime(2014, 9, 11)
 # that contain the input flight track points on 2014-10-17
 granules = FIND_MODIS(date, tmhr, lon, lat, satID='aqua', tmhr_range=[10.0, 12.0])
 
+# plot the found granules
+EARTH_VIEW(granules, tmhr, lon, lat)
+
 # define a ftp instance
 ftp_init = FTP_INIT(granules)
 
