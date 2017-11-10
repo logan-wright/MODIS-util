@@ -16,7 +16,7 @@ GeoMeta data of MODIS provided by LAADS, which is a geographic text
 file that contains MODIS granule corner-point latitudes and longitudes,
 is used here to define the MODIS granule projected on Earth. The GeoMeta data
 is a non-offical MODIS archive product and is restricted access only via
-anonymous [ftp site](ftp:\\ladsweb.nascom.nasa.gov/geoMeta).
+anonymous FTP site `ftp://ladsweb.nascom.nasa.gov/geoMeta`.
 
 This code takes in the corner-point lon/lat of MODIS granule and defines a polygon
 on Earth through `matplotlib.path`. Then uses the function of `matplotlib.path.contains_points`
