@@ -367,7 +367,7 @@ if __name__ == '__main__':
     from matplotlib import rcParams
     import matplotlib.patches as patches
 
-    date = datetime.datetime(2014, 9, 13)
+    date = datetime.datetime(2014, 9, 16)
 
     hsk  = READ_ICT_HSK(date)
     tmhr = (hsk.data['Start_UTC']/3600.0)[::10]
@@ -375,8 +375,7 @@ if __name__ == '__main__':
     lat  = hsk.data['Latitude'][::10]
 
     for satID in ['aqua', 'terra']:
-        data = FIND_MODIS(date, tmhr, lon, lat, satID=satID, tmhr_range=[20.0, 21.0])
-        # EARTH_VIEW(data, tmhr, lon, lat)
-
-        # ftp_init = FTP_INIT(data)
-        # DOWNLOAD_MODIS(ftp_init)
+        data = FIND_MODIS(date, tmhr, lon, lat, satID=satID, tmhr_range=[20.0, 21.5])
+        EARTH_VIEW(data, tmhr, lon, lat)
+        ftp_init = FTP_INIT(data)
+        DOWNLOAD_MODIS(ftp_init)
