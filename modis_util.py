@@ -518,7 +518,6 @@ def TEST_READ():
     ax1 = fig.add_subplot(111)
     ax1.set_title(modis.namePattern)
     ax1.scatter(modis.lon_collo, modis.lat_collo, c=modis.cot_collo, s=2.0, zorder=1, vmin=0.0, vmax=20.0, cmap='jet', alpha=1.0)
-    # namePattern = 'MOD*.A20140911.2025*.hdf'
     ax1.scatter(modis.lon_domain, modis.lat_domain, c=modis.cot_domain, vmin=0.0, vmax=20.0, cmap='jet', zorder=0, alpha=0.2)
     cs1 = ax1.scatter(modis.lon_domain, modis.lat_domain, c=modis.cot_domain, s=0.0, vmin=0.0, vmax=20.0, cmap='jet', zorder=0, alpha=1.0)
     # ax1.set_xlim(())
