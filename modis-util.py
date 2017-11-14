@@ -237,7 +237,7 @@ def DOWNLOAD_MODIS(ftp_init, fdirOut=os.getcwd(), verbose=True):
             while (pattern not in fnames[count]):
                 count += 1
             fname  = fnames[count]
-            fname_new = MODIS_RENAME(fname)
+            fname_new = RENAME_MODIS(fname)
 
             if os.path.exists('%s/%s' % (fdirOut, fname)):
                 print('Warning [DOWNLOAD_MODIS]: %s exists under %s.' % (fname, fdirOut))
@@ -340,7 +340,7 @@ def EARTH_VIEW(data, tmhr, lon, lat):
         ax.set_global()
         ax.stock_img()
         ax.coastlines(color='gray', lw=0.2)
-        title = MODIS_RENAME(data[i]['GranuleID'].decode('UTF-8'))
+        title = RENAME_MODIS(data[i]['GranuleID'].decode('UTF-8'))
         ax.set_title(title, fontsize=8)
 
         modis_granule  = mpl_path.Path(LonLat_modis, closed=True)
@@ -361,7 +361,7 @@ def EARTH_VIEW(data, tmhr, lon, lat):
 
     # ---------------------------------------------------------------------
 
-def MODIS_RENAME(filename):
+def RENAME_MODIS(filename):
 
     try:
         fwords = filename.split('.')
@@ -370,7 +370,7 @@ def MODIS_RENAME(filename):
         return '.'.join(fwords)
 
     except ValueError:
-        print('Warning [MODIS_RENAME]: cannot convert, return input filename as new filename.')
+        print('Warning [RENAME_MODIS]: cannot convert, return input filename as new filename.')
         return filename
 
 if __name__ == '__main__':
