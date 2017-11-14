@@ -297,6 +297,17 @@ class READ_ICT_HSK:
             self.data[vname] = data[:, i]
 
 def EARTH_VIEW(data, tmhr, lon, lat):
+    """
+    Purpose:
+        Plot input geo info and MODIS granule on map (globe).
+
+    input:
+        data: geoMeta data
+
+        tmhr: \
+        lon : -> input geo info, e.g., flight track
+        lat : /
+    """
 
     lon[lon>180.0] -= 360.0
     logic  = (tmhr>=0.0)&(tmhr<48.0) & (lon>=-180.0)&(lon<=180.0) & (lat>=-90.0)&(lat<=90.0)
@@ -362,6 +373,15 @@ def EARTH_VIEW(data, tmhr, lon, lat):
     # ---------------------------------------------------------------------
 
 def RENAME_MODIS(filename):
+    """
+    Purpose:
+        Change the "Day-Of-Year" in the MODIS file name to "YearMonthDay"
+
+    input:
+        MODIS file name, e.g. MYD03.A2014290.0035.006.2014290162522.hdf
+    output:
+        new MODIS file name, e.g., MYD03.A20141017.0035.006.2014290162522.hdf
+    """
 
     try:
         fwords = filename.split('.')
