@@ -356,6 +356,22 @@ class MODIS_L2:
     """
     input:
         namePattern: e.g. MOD*.A20140911.2025*.hdf
+        vnameExtra: default is ''
+        fdir: the data directory
+
+    output:
+        a class object that contains:
+            1. self.lon
+            2. self.lat
+            3. self.cot
+            4. self.cer
+            5. self.COLLOCATE(lon_in, lat_in):
+                5.1. self.lon_domain
+                5.2. self.lat_domain
+                5.3. self.lon_collo
+                5.4. self.lat_collo
+                5.5. self.cot_collo
+                5.6. self.cer_collo
     """
 
     def __init__(self, namePattern, vnameExtra='', fdir='/Users/hoch4240/Chen/mygit/MODIS-util/data/allData/6'):
@@ -491,9 +507,9 @@ def TEST_READ():
 
     hsk  = READ_ICT_HSK(date, tmhr_range=[20.7, 22.65])
     # namePattern = 'MOD*.A20140911.2025*.hdf'
-    namePattern = 'MOD*.A20140911.2200*.hdf'
+    # namePattern = 'MOD*.A20140911.2200*.hdf'
     # namePattern = 'MYD*.A20140911.2045*.hdf'
-    # namePattern = 'MYD*.A20140911.2220*.hdf'
+    namePattern = 'MYD*.A20140911.2220*.hdf'
     modis = MODIS_L2(namePattern)
     modis.COLLOCATE(hsk.data['Longitude'], hsk.data['Latitude'])
 
@@ -503,7 +519,8 @@ def TEST_READ():
     ax1.set_title(modis.namePattern)
     ax1.scatter(modis.lon_collo, modis.lat_collo, c=modis.cot_collo, s=2.0, zorder=1, vmin=0.0, vmax=20.0, cmap='jet', alpha=1.0)
     # namePattern = 'MOD*.A20140911.2025*.hdf'
-    cs1 = ax1.scatter(modis.lon_domain, modis.lat_domain, c=modis.cot_domain, vmin=0.0, vmax=20.0, cmap='jet', zorder=0, alpha=0.2)
+    ax1.scatter(modis.lon_domain, modis.lat_domain, c=modis.cot_domain, vmin=0.0, vmax=20.0, cmap='jet', zorder=0, alpha=0.2)
+    cs1 = ax1.scatter(modis.lon_domain, modis.lat_domain, c=modis.cot_domain, s=0.0, vmin=0.0, vmax=20.0, cmap='jet', zorder=0, alpha=1.0)
     # ax1.set_xlim(())
     # ax1.set_ylim(())
     # ax1.legend(loc='upper right', fontsize=10, framealpha=0.4)
