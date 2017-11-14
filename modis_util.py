@@ -14,6 +14,8 @@ import numpy as np
 import matplotlib.path as mpl_path
 import cartopy.crs as ccrs
 import ftplib
+from pyhdf.SD import SD, SDC
+from scipy import interpolate
 
 def READ_GEOMETA(date, satID='aqua', fdir='/Users/hoch4240/Chen/mygit/MODIS-util/data/geoMeta/6'):
     """
@@ -349,9 +351,58 @@ def DOWNLOAD_MODIS(ftp_init, fdirOut=os.getcwd(), verbose=True):
 
     ftpMODIS.quit()
 
+class MODIS_L2:
+
+    """
+    input:
+        namePattern: e.g. MOD*.A20140911.2025*.hdf
+    """
+
+    def __init__(self, namePattern, vnameExtra='', fdir='/Users/hoch4240/Chen/mygit/MODIS-util/data/allData/6'):
+
+        fnames = sorted(glob.glob('%s/%s' % (fdir, namePattern)))
+        if len(fnames) != 2:
+            exit('Error [MODIS_L2]: invalid file number for %s under %s' % (namePattern, fdir))
+
+        self.namePattern = namePattern
+
+        fname_geo = fnames[0]
+        f_geo = SD(fname_geo, SDC.READ)
+        lon = f_geo.select('Longitude')[:]
+        lon[lon<0.0] += 360.0
+        self.lon = lon
+        self.lat = f_geo.select('Latitude')[:]
+        f_geo.end()
+
+        fname_cld = fnames[1]
+        f_cld = SD(fname_cld, SDC.READ)
+        vname_cot = 'Cloud_Optical_Thickness' + vnameExtra
+        self.cot = f_cld.select(vname_cot)[:] * f_cld.select(vname_cot).attributes()['scale_factor']
+        vname_cer = 'Cloud_Effective_Radius' + vnameExtra
+        self.cer = f_cld.select(vname_cer)[:] * f_cld.select(vname_cer).attributes()['scale_factor']
+        f_cld.end()
+
+    def COLLOCATE(self, lon_in, lat_in):
+
+        lon_in[lon_in<0.0] += 360.0
+        logic = (self.lon>(lon_in.min()-0.1)) & (self.lon<(lon_in.max()+0.1)) & \
+                (self.lat>(lat_in.min()-0.1)) & (self.lat<(lat_in.max()+0.1))
+
+        self.lon_domain = self.lon[logic].ravel()
+        self.lat_domain = self.lat[logic].ravel()
+        self.cot_domain = self.cot[logic].ravel()
+        self.cer_domain = self.cer[logic].ravel()
+
+        points = np.array(list(zip(self.lon_domain, self.lat_domain)))
+
+        self.lon_collo = lon_in
+        self.lat_collo = lat_in
+        self.cot_collo = interpolate.griddata(points, self.cot_domain, (lon_in, lat_in), method='linear')
+        self.cer_collo = interpolate.griddata(points, self.cer_domain, (lon_in, lat_in), method='linear')
+
 class READ_ICT_HSK:
 
-    def __init__(self, date, fdir='/Users/hoch4240/Chen/work/01_ARISE/comp2/data/hsk'):
+    def __init__(self, date, tmhr_range=None, fdir='/Users/hoch4240/Chen/work/01_ARISE/comp2/data/hsk'):
 
         date_s = date.strftime('%Y%m%d')
         self.date   = date
@@ -388,18 +439,18 @@ class READ_ICT_HSK:
         f.close()
 
         data = np.genfromtxt(fname, skip_header=skip_header, delimiter=',')
-
         self.data = {}
 
-        for i, vname in enumerate(vnames):
-            self.data[vname] = data[:, i]
+        if tmhr_range != None:
+            tmhr0 = data[:, 0]/3600.0
+            logic = (tmhr0>=tmhr_range[0]) & (tmhr0<=tmhr_range[1])
+            for i, vname in enumerate(vnames):
+                self.data[vname] = data[:, i][logic]
+        else:
+            for i, vname in enumerate(vnames):
+                self.data[vname] = data[:, i]
 
-if __name__ == '__main__':
-
-    import matplotlib as mpl
-    import matplotlib.pyplot as plt
-    from matplotlib import rcParams
-    import matplotlib.patches as patches
+def TEST_DOWNLOAD():
 
     date = datetime.datetime(2014, 9, 11)
     date_s = datetime.datetime.strftime(date, '%Y-%m-%d')
@@ -414,3 +465,60 @@ if __name__ == '__main__':
         EARTH_VIEW(data, tmhr, lon, lat)
         # ftp_init = FTP_INIT(data)
         # DOWNLOAD_MODIS(ftp_init, fdirOut='data/allData/6')
+
+def TEST_READ():
+    date = datetime.datetime(2014, 9, 11)
+
+    # hsk  = READ_ICT_HSK(date, tmhr_range=[20.4167, 20.5])
+    # namePattern = 'MOD*.A20140911.2025*.hdf'
+    # modis = MODIS_L2(namePattern)
+    # modis.COLLOCATE(hsk.data['Longitude'], hsk.data['Latitude'])
+
+    # hsk  = READ_ICT_HSK(date, tmhr_range=[22.0, 22.0833])
+    # namePattern = 'MOD*.A20140911.2200*.hdf'
+    # modis = MODIS_L2(namePattern)
+    # modis.COLLOCATE(hsk.data['Longitude'], hsk.data['Latitude'])
+
+    # hsk  = READ_ICT_HSK(date, tmhr_range=[20.75, 20.8333])
+    # namePattern = 'MYD*.A20140911.2045*.hdf'
+    # modis = MODIS_L2(namePattern)
+    # modis.COLLOCATE(hsk.data['Longitude'], hsk.data['Latitude'])
+
+    # hsk  = READ_ICT_HSK(date, tmhr_range=[22.3333, 22.4167])
+    # namePattern = 'MYD*.A20140911.2220*.hdf'
+    # modis = MODIS_L2(namePattern)
+    # modis.COLLOCATE(hsk.data['Longitude'], hsk.data['Latitude'])
+
+    hsk  = READ_ICT_HSK(date, tmhr_range=[20.7, 22.65])
+    # namePattern = 'MOD*.A20140911.2025*.hdf'
+    namePattern = 'MOD*.A20140911.2200*.hdf'
+    # namePattern = 'MYD*.A20140911.2045*.hdf'
+    # namePattern = 'MYD*.A20140911.2220*.hdf'
+    modis = MODIS_L2(namePattern)
+    modis.COLLOCATE(hsk.data['Longitude'], hsk.data['Latitude'])
+
+    # +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+    fig = plt.figure(figsize=(8, 6))
+    ax1 = fig.add_subplot(111)
+    ax1.set_title(modis.namePattern)
+    ax1.scatter(modis.lon_collo, modis.lat_collo, c=modis.cot_collo, s=2.0, zorder=1, vmin=0.0, vmax=20.0, cmap='jet', alpha=1.0)
+    # namePattern = 'MOD*.A20140911.2025*.hdf'
+    cs1 = ax1.scatter(modis.lon_domain, modis.lat_domain, c=modis.cot_domain, vmin=0.0, vmax=20.0, cmap='jet', zorder=0, alpha=0.2)
+    # ax1.set_xlim(())
+    # ax1.set_ylim(())
+    # ax1.legend(loc='upper right', fontsize=10, framealpha=0.4)
+    plt.colorbar(cs1)
+    plt.savefig('%s.png' % namePattern[:-4])
+    plt.show()
+    exit()
+    # ---------------------------------------------------------------------
+
+if __name__ == '__main__':
+
+
+    import matplotlib as mpl
+    import matplotlib.pyplot as plt
+    from matplotlib import rcParams
+    import matplotlib.patches as patches
+
+    TEST_READ()
