@@ -31,13 +31,13 @@ projection centered at polygon centroid is used for each MODIS granule.
 
 - `READ_GEOMETA` (function)
 
-- `FTP_INIT` (class)
-
 - `FIND_MODIS` (function)
 
 - `EARTH_VIEW` (function)
 
 - `RENAME_MODIS` (function)
+
+- `FTP_INIT` (class)
 
 - `DOWNLOAD_MODIS` (function)
 
