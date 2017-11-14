@@ -236,12 +236,13 @@ def DOWNLOAD_MODIS(ftp_init, fdirOut=os.getcwd(), verbose=True):
             count = 0
             while (pattern not in fnames[count]):
                 count += 1
-            fname = fnames[count]
+            fname  = fnames[count]
+            fname_new = MODIS_RENAME(fname)
 
             if os.path.exists('%s/%s' % (fdirOut, fname)):
                 print('Warning [DOWNLOAD_MODIS]: %s exists under %s.' % (fname, fdirOut))
             else:
-                ftpMODIS.retrbinary('RETR %s' % fname, open('%s/%s' % (fdirOut, fname), 'wb').write)
+                ftpMODIS.retrbinary('RETR %s' % fname, open('%s/%s' % (fdirOut, fname_new), 'wb').write)
                 if verbose and glob.glob('%s/%s' % (fdirOut, fname)):
                     print('Message [DOWNLOAD_MODIS]: %s has been downloaded under %s.' % (fname, fdirOut))
 
@@ -339,7 +340,7 @@ def EARTH_VIEW(data, tmhr, lon, lat):
         ax.set_global()
         ax.stock_img()
         ax.coastlines(color='gray', lw=0.2)
-        title = data[i]['GranuleID'].decode('UTF-8')
+        title = MODIS_RENAME(data[i]['GranuleID'].decode('UTF-8'))
         ax.set_title(title, fontsize=8)
 
         modis_granule  = mpl_path.Path(LonLat_modis, closed=True)
@@ -360,6 +361,18 @@ def EARTH_VIEW(data, tmhr, lon, lat):
 
     # ---------------------------------------------------------------------
 
+def MODIS_RENAME(filename):
+
+    try:
+        fwords = filename.split('.')
+        date = datetime.datetime.strptime(fwords[1], 'A%Y%j')
+        fwords[1] = date.strftime('A%Y%m%d')
+        return '.'.join(fwords)
+
+    except ValueError:
+        print('Warning [MODIS_RENAME]: cannot convert, return input filename as new filename.')
+        return filename
+
 if __name__ == '__main__':
 
     import matplotlib as mpl
@@ -368,6 +381,7 @@ if __name__ == '__main__':
     import matplotlib.patches as patches
 
     date = datetime.datetime(2014, 9, 11)
+    date_s = datetime.datetime.strftime(date, '%Y-%m-%d')
 
     hsk  = READ_ICT_HSK(date)
     tmhr = (hsk.data['Start_UTC']/3600.0)[::10]
@@ -375,8 +389,7 @@ if __name__ == '__main__':
     lat  = hsk.data['Latitude'][::10]
 
     for satID in ['aqua', 'terra']:
-        # data = FIND_MODIS(date, tmhr, lon, lat, satID=satID, tmhr_range=[20.0, 21.5])
-        data = FIND_MODIS(date, tmhr, lon, lat, satID=satID)
+        data = FIND_MODIS(date, tmhr, lon, lat, satID=satID, tmhr_range=[20.0, 23.5])
         EARTH_VIEW(data, tmhr, lon, lat)
         # ftp_init = FTP_INIT(data)
-        # DOWNLOAD_MODIS(ftp_init)
+        # DOWNLOAD_MODIS(ftp_init, fdirOut='data/allData/6')
