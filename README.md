@@ -47,7 +47,7 @@ projection centered at polygon centroid is used for each MODIS granule.
 
 ```python
 import datetime
-from modis-util import FIND_MODIS, EARTH_VIEW, FTP_INIT, DOWNLOAD_MODIS
+from modis_util import FIND_MODIS, EARTH_VIEW, FTP_INIT, DOWNLOAD_MODIS
 
 # assume we read in some flight track info here
 #
