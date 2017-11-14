@@ -176,6 +176,104 @@ def FIND_MODIS(date, tmhr, lon, lat, satID='aqua', percentIn_threshold=0.0, tmhr
 
     return data[indices_find]
 
+def EARTH_VIEW(data, tmhr, lon, lat):
+
+    """
+    Purpose:
+        Plot input geo info and MODIS granule on map (globe).
+
+    input:
+        data: geoMeta data
+
+        tmhr: -
+        lon : --> input geo info, e.g., flight track
+        lat : -
+    """
+
+    lon[lon>180.0] -= 360.0
+    logic  = (tmhr>=0.0)&(tmhr<48.0) & (lon>=-180.0)&(lon<=180.0) & (lat>=-90.0)&(lat<=90.0)
+
+    tmhr   = tmhr[logic]
+    lon    = lon[logic]
+    lat    = lat[logic]
+
+    rcParams['font.size'] = 8.0
+
+    proj_ori = ccrs.PlateCarree()
+    for i, line in enumerate(data):
+
+        xx0  = np.array([line['GRingLongitude1'], line['GRingLongitude2'], line['GRingLongitude3'], line['GRingLongitude4'], line['GRingLongitude1']])
+        yy0  = np.array([line['GRingLatitude1'] , line['GRingLatitude2'] , line['GRingLatitude3'] , line['GRingLatitude4'] , line['GRingLatitude1']])
+
+        if (abs(xx0[0]-xx0[1])>180.0) | (abs(xx0[0]-xx0[2])>180.0) | \
+           (abs(xx0[0]-xx0[3])>180.0) | (abs(xx0[1]-xx0[2])>180.0) | \
+           (abs(xx0[1]-xx0[3])>180.0) | (abs(xx0[2]-xx0[3])>180.0):
+
+            xx0[xx0<0.0] += 360.0
+
+        xx = xx0[:-1]
+        yy = yy0[:-1]
+        center_lon = xx.mean()
+        center_lat = yy.mean()
+
+        # second attempt to find the center point of MODIS granule
+        # +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+        proj_tmp   = ccrs.Orthographic(central_longitude=center_lon, central_latitude=center_lat)
+        LonLat_tmp = proj_tmp.transform_points(proj_ori, xx, yy)[:, [0, 1]]
+        center_xx  = LonLat_tmp[:, 0].mean(); center_yy = LonLat_tmp[:, 1].mean()
+        center_lon, center_lat = proj_ori.transform_point(center_xx, center_yy, proj_tmp)
+        # ---------------------------------------------------------------------
+
+        proj_new = ccrs.Orthographic(central_longitude=center_lon, central_latitude=center_lat)
+        LonLat_in = proj_new.transform_points(proj_ori, lon, lat)[:, [0, 1]]
+        LonLat_modis  = proj_new.transform_points(proj_ori, xx0, yy0)[:, [0, 1]]
+
+        ax = plt.axes(projection=proj_new)
+        ax.set_global()
+        ax.stock_img()
+        ax.coastlines(color='gray', lw=0.2)
+        title = RENAME_MODIS(data[i]['GranuleID'].decode('UTF-8'))
+        ax.set_title(title, fontsize=8)
+
+        modis_granule  = mpl_path.Path(LonLat_modis, closed=True)
+        pointsIn       = modis_granule.contains_points(LonLat_in)
+        percentIn      = float(pointsIn.sum()) / float(pointsIn.size) * 100.0
+        if (percentIn > 0):
+            patch = patches.PathPatch(modis_granule, facecolor='g', edgecolor='g', alpha=0.4, lw=0.2)
+        else:
+            patch = patches.PathPatch(modis_granule, facecolor='k', edgecolor='k', alpha=0.2, lw=0.2)
+
+        cs = ax.scatter(lon, lat, transform=ccrs.Geodetic(), s=0.01, c=tmhr, cmap='jet')
+        ax.scatter(xx.mean(), yy.mean(), marker='*', transform=ccrs.Geodetic(), s=6, c='r')
+        ax.scatter(center_lon, center_lat, marker='*', transform=ccrs.Geodetic(), s=6, c='b')
+        ax.add_patch(patch)
+        plt.colorbar(cs, shrink=0.6)
+        plt.savefig('%s.png' % '.'.join(title.split('.')[:-1]))
+        plt.close()
+
+    # ---------------------------------------------------------------------
+
+def RENAME_MODIS(filename):
+    """
+    Purpose:
+        Change the "Day-Of-Year" in the MODIS file name to "YearMonthDay"
+
+    input:
+        MODIS file name, e.g. MYD03.A2014290.0035.006.2014290162522.hdf
+    output:
+        new MODIS file name, e.g., MYD03.A20141017.0035.006.2014290162522.hdf
+    """
+
+    try:
+        fwords = filename.split('.')
+        date = datetime.datetime.strptime(fwords[1], 'A%Y%j')
+        fwords[1] = date.strftime('A%Y%m%d')
+        return '.'.join(fwords)
+
+    except ValueError:
+        print('Warning [RENAME_MODIS]: cannot convert, return input filename as new filename.')
+        return filename
+
 class FTP_INIT:
 
     def __init__(self, data):
@@ -295,103 +393,6 @@ class READ_ICT_HSK:
 
         for i, vname in enumerate(vnames):
             self.data[vname] = data[:, i]
-
-def EARTH_VIEW(data, tmhr, lon, lat):
-    """
-    Purpose:
-        Plot input geo info and MODIS granule on map (globe).
-
-    input:
-        data: geoMeta data
-
-        tmhr: \
-        lon : -> input geo info, e.g., flight track
-        lat : /
-    """
-
-    lon[lon>180.0] -= 360.0
-    logic  = (tmhr>=0.0)&(tmhr<48.0) & (lon>=-180.0)&(lon<=180.0) & (lat>=-90.0)&(lat<=90.0)
-
-    tmhr   = tmhr[logic]
-    lon    = lon[logic]
-    lat    = lat[logic]
-
-    rcParams['font.size'] = 8.0
-
-    proj_ori = ccrs.PlateCarree()
-    for i, line in enumerate(data):
-
-        xx0  = np.array([line['GRingLongitude1'], line['GRingLongitude2'], line['GRingLongitude3'], line['GRingLongitude4'], line['GRingLongitude1']])
-        yy0  = np.array([line['GRingLatitude1'] , line['GRingLatitude2'] , line['GRingLatitude3'] , line['GRingLatitude4'] , line['GRingLatitude1']])
-
-        if (abs(xx0[0]-xx0[1])>180.0) | (abs(xx0[0]-xx0[2])>180.0) | \
-           (abs(xx0[0]-xx0[3])>180.0) | (abs(xx0[1]-xx0[2])>180.0) | \
-           (abs(xx0[1]-xx0[3])>180.0) | (abs(xx0[2]-xx0[3])>180.0):
-
-            xx0[xx0<0.0] += 360.0
-
-        xx = xx0[:-1]
-        yy = yy0[:-1]
-        center_lon = xx.mean()
-        center_lat = yy.mean()
-
-        # second attempt to find the center point of MODIS granule
-        # +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-        proj_tmp   = ccrs.Orthographic(central_longitude=center_lon, central_latitude=center_lat)
-        LonLat_tmp = proj_tmp.transform_points(proj_ori, xx, yy)[:, [0, 1]]
-        center_xx  = LonLat_tmp[:, 0].mean(); center_yy = LonLat_tmp[:, 1].mean()
-        center_lon, center_lat = proj_ori.transform_point(center_xx, center_yy, proj_tmp)
-        # ---------------------------------------------------------------------
-
-        proj_new = ccrs.Orthographic(central_longitude=center_lon, central_latitude=center_lat)
-        LonLat_in = proj_new.transform_points(proj_ori, lon, lat)[:, [0, 1]]
-        LonLat_modis  = proj_new.transform_points(proj_ori, xx0, yy0)[:, [0, 1]]
-
-        ax = plt.axes(projection=proj_new)
-        ax.set_global()
-        ax.stock_img()
-        ax.coastlines(color='gray', lw=0.2)
-        title = RENAME_MODIS(data[i]['GranuleID'].decode('UTF-8'))
-        ax.set_title(title, fontsize=8)
-
-        modis_granule  = mpl_path.Path(LonLat_modis, closed=True)
-        pointsIn       = modis_granule.contains_points(LonLat_in)
-        percentIn      = float(pointsIn.sum()) / float(pointsIn.size) * 100.0
-        if (percentIn > 0):
-            patch = patches.PathPatch(modis_granule, facecolor='g', edgecolor='g', alpha=0.4, lw=0.2)
-        else:
-            patch = patches.PathPatch(modis_granule, facecolor='k', edgecolor='k', alpha=0.2, lw=0.2)
-
-        cs = ax.scatter(lon, lat, transform=ccrs.Geodetic(), s=0.01, c=tmhr, cmap='jet')
-        ax.scatter(xx.mean(), yy.mean(), marker='*', transform=ccrs.Geodetic(), s=6, c='r')
-        ax.scatter(center_lon, center_lat, marker='*', transform=ccrs.Geodetic(), s=6, c='b')
-        ax.add_patch(patch)
-        plt.colorbar(cs, shrink=0.6)
-        plt.savefig('%s.png' % '.'.join(title.split('.')[:-1]))
-        plt.close()
-
-    # ---------------------------------------------------------------------
-
-def RENAME_MODIS(filename):
-    """
-    Purpose:
-        Change the "Day-Of-Year" in the MODIS file name to "YearMonthDay"
-
-    input:
-        MODIS file name, e.g. MYD03.A2014290.0035.006.2014290162522.hdf
-    output:
-        new MODIS file name, e.g., MYD03.A20141017.0035.006.2014290162522.hdf
-    """
-
-    try:
-        fwords = filename.split('.')
-        date = datetime.datetime.strptime(fwords[1], 'A%Y%j')
-        fwords[1] = date.strftime('A%Y%m%d')
-        return '.'.join(fwords)
-
-    except ValueError:
-        print('Warning [RENAME_MODIS]: cannot convert, return input filename as new filename.')
-        return filename
 
 if __name__ == '__main__':
 
