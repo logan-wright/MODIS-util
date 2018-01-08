@@ -401,8 +401,8 @@ class MODIS_L2:
     def COLLOCATE(self, lon_in, lat_in):
 
         lon_in[lon_in<0.0] += 360.0
-        logic = (self.lon>(lon_in.min()-0.1)) & (self.lon<(lon_in.max()+0.1)) & \
-                (self.lat>(lat_in.min()-0.1)) & (self.lat<(lat_in.max()+0.1))
+        logic = (self.lon>(lon_in.min()-0.2)) & (self.lon<(lon_in.max()+0.2)) & \
+                (self.lat>(lat_in.min()-0.2)) & (self.lat<(lat_in.max()+0.2))
 
         self.lon_domain = self.lon[logic].ravel()
         self.lat_domain = self.lat[logic].ravel()
@@ -415,6 +415,48 @@ class MODIS_L2:
         self.lat_collo = lat_in
         self.cot_collo = interpolate.griddata(points, self.cot_domain, (lon_in, lat_in), method='linear')
         self.cer_collo = interpolate.griddata(points, self.cer_domain, (lon_in, lat_in), method='linear')
+
+def WORLDVIEW_DOWNLOAD():
+
+    import urllib.request
+
+    rgb_link_p1 = 'https://gibs.earthdata.nasa.gov/image-download?TIME='
+    rgb_link_p3 = '&extent=109.27000072667128,-0.37391741801447864,134.7231257266713,24.65733258198552&epsg=4326&layers=MODIS_'
+    rgb_link_p5 = '_CorrectedReflectance_TrueColor,Coastlines,MODIS_Combined_Value_Added_AOD&opacities=1,1,1&worldfile=false&format=image/png&width=2896&height=2848'
+
+    ctt_link_p1 = 'https://gibs.earthdata.nasa.gov/image-download?TIME='
+    ctt_link_p3 = '&extent=109.27000072667128,-0.37391741801447864,134.7231257266713,24.65733258198552&epsg=4326&layers=Coastlines,MODIS_'
+    ctt_link_p5 = '_Cloud_Top_Temp_Day,MODIS_Combined_Value_Added_AOD&opacities=1,1,1&worldfile=false&format=image/png&width=2896&height=2848'
+
+
+    date_s = datetime.datetime(2016, 7, 1)
+    date_e = datetime.datetime(2016, 9, 1)
+
+    tags = {'Terra RGB': '01', 'Aqua RGB': '02', 'Terra CTT': '03', 'Aqua CTT': '04'}
+
+    while date_s < date_e:
+
+        link_p2 = date_s.strftime('%Y%j')
+        date_str = date_s.strftime('%Y-%m-%d')
+
+        for link_p4 in ['Terra', 'Aqua']:
+            rgb_tag = '%s RGB' % link_p4
+            ctt_tag = '%s CTT' % link_p4
+
+            rgb_link = rgb_link_p1 + link_p2 + rgb_link_p3 + link_p4 + rgb_link_p5
+            ctt_link = ctt_link_p1 + link_p2 + ctt_link_p3 + link_p4 + ctt_link_p5
+
+            rgb_filename = '/Users/hoch4240/Chen/work/09_CAMP2Ex/data/%4.4d/%s_%s.png' % (date_s.year, date_str, tags[rgb_tag])
+            ctt_filename = '/Users/hoch4240/Chen/work/09_CAMP2Ex/data/%4.4d/%s_%s.png' % (date_s.year, date_str, tags[ctt_tag])
+
+            urllib.request.urlretrieve(rgb_link, rgb_filename)
+            urllib.request.urlretrieve(ctt_link, ctt_filename)
+
+        print(date_str)
+        date_s += datetime.timedelta(days=1)
+
+
+# =============================================================
 
 class READ_ICT_HSK:
 
@@ -505,36 +547,192 @@ def TEST_READ():
     # modis = MODIS_L2(namePattern)
     # modis.COLLOCATE(hsk.data['Longitude'], hsk.data['Latitude'])
 
-    hsk  = READ_ICT_HSK(date, tmhr_range=[20.7, 22.65])
-    # namePattern = 'MOD*.A20140911.2025*.hdf'
+    hsk  = READ_ICT_HSK(date, tmhr_range=[21.16416667, 22.60638889])
+    namePattern = 'MOD*.A20140911.2025*.hdf'
     # namePattern = 'MOD*.A20140911.2200*.hdf'
     # namePattern = 'MYD*.A20140911.2045*.hdf'
-    namePattern = 'MYD*.A20140911.2220*.hdf'
+    # namePattern = 'MYD*.A20140911.2220*.hdf'
     modis = MODIS_L2(namePattern)
     modis.COLLOCATE(hsk.data['Longitude'], hsk.data['Latitude'])
 
     # +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-    fig = plt.figure(figsize=(8, 6))
+    # proj = ccrs.PlateCarree()
+    # proj_map = ccrs.LambertConformal(central_longitude=modis.lon.mean(), central_latitude=modis.lat.mean())
+    # proj_map = ccrs.Stereographic(central_longitude=modis.lon.mean(), central_latitude=modis.lat.mean())
+
+    rcParams['font.size'] = 16
+    # fig = plt.figure(figsize=(5.8, 5))
+    fig = plt.figure(figsize=(7, 6))
+    # ax1 = fig.add_subplot(111, projection=proj_map)
     ax1 = fig.add_subplot(111)
-    ax1.set_title(modis.namePattern)
-    ax1.scatter(modis.lon_collo, modis.lat_collo, c=modis.cot_collo, s=2.0, zorder=1, vmin=0.0, vmax=20.0, cmap='jet', alpha=1.0)
-    ax1.scatter(modis.lon_domain, modis.lat_domain, c=modis.cot_domain, vmin=0.0, vmax=20.0, cmap='jet', zorder=0, alpha=0.2)
-    cs1 = ax1.scatter(modis.lon_domain, modis.lat_domain, c=modis.cot_domain, s=0.0, vmin=0.0, vmax=20.0, cmap='jet', zorder=0, alpha=1.0)
-    # ax1.set_xlim(())
-    # ax1.set_ylim(())
-    # ax1.legend(loc='upper right', fontsize=10, framealpha=0.4)
+    # ax1.set_extent([modis.lon_domain.min()-0.2, modis.lon_domain.max()+0.2, modis.lat_domain.min()-0.2, modis.lat_domain.max()+0.2], ccrs.PlateCarree())
+
+    # ax1.scatter(modis.lon_domain, modis.lat_domain, c=modis.cot_domain, vmin=0.0, vmax=20.0, cmap='jet', alpha=0.2, transform=proj)
+    # cs1 = ax1.scatter(modis.lon_domain, modis.lat_domain, c=modis.cot_domain, s=0.0, vmin=0.0, vmax=20.0, cmap='jet', alpha=1.0, transform=proj)
+    # ax1.scatter(hsk.data['Longitude'], hsk.data['Latitude'], c='k', s=0.8, alpha=0.8, transform=proj)
+
+    ax1.scatter(modis.lon_domain, modis.lat_domain, c=modis.cot_domain, vmin=0.0, vmax=20.0, cmap='jet', alpha=0.4, lw=0.0)
+    cs1 = ax1.scatter(modis.lon_domain, modis.lat_domain, c=modis.cot_domain, s=0.0, vmin=0.0, vmax=20.0, cmap='jet', alpha=1.0, lw=0.0)
+    ax1.scatter(modis.lon_collo, modis.lat_collo, c='k', s=1.8, alpha=0.8, lw=0.0)
+
+    # ax1.scatter(modis.lon_domain, modis.lat_domain, c=modis.cer_domain, vmin=0.0, vmax=25.0, cmap='jet', alpha=0.4, lw=0.0)
+    # cs1 = ax1.scatter(modis.lon_domain, modis.lat_domain, c=modis.cer_domain, s=0.0, vmin=0.0, vmax=25.0, cmap='jet', alpha=1.0, lw=0.0)
+    # ax1.scatter(modis.lon_collo, modis.lat_collo, c='k', s=1.8, alpha=0.8, lw=0.0)
+
+    # ax1.scatter(modis.lon_domain, modis.lat_domain, c=modis.cot_domain, vmin=0.0, vmax=20.0, cmap='jet', alpha=0.2)
+    # cs1 = ax1.scatter(modis.lon_domain, modis.lat_domain, c=modis.cot_domain, s=0.0, vmin=0.0, vmax=20.0, cmap='jet', alpha=1.0)
+    # ax1.scatter(modis.lon_collo, modis.lat_collo, c='k', s=0.8, alpha=0.8)
+    ax1.yaxis.set_major_locator(FixedLocator(np.arange(60.0, 90.1, 0.5)))
+    ax1.set_xlabel('Longitude [$^\circ$]')
+    ax1.set_ylabel('Latitude [$^\circ$]')
     plt.colorbar(cs1)
-    plt.savefig('%s.png' % namePattern[:-4])
+    # plt.savefig('%s.png' % namePattern[:-4])
+    plt.savefig('cot.png')
     plt.show()
     exit()
     # ---------------------------------------------------------------------
 
+def EARTH_VIEW_TEST(data, tmhr, lon, lat):
+
+    """
+    Purpose:
+        Plot input geo info and MODIS granule on map (globe).
+
+    input:
+        data: geoMeta data
+
+        tmhr: -
+        lon : --> input geo info, e.g., flight track
+        lat : -
+    """
+
+    lon[lon>180.0] -= 360.0
+    logic  = (tmhr>=0.0)&(tmhr<48.0) & (lon>=-180.0)&(lon<=180.0) & (lat>=-90.0)&(lat<=90.0)
+
+    tmhr   = tmhr[logic]
+    lon    = lon[logic]
+    lat    = lat[logic]
+
+    rcParams['font.size'] = 8.0
+
+    proj_ori = ccrs.PlateCarree()
+    for i, line in enumerate(data):
+
+        xx0  = np.array([line['GRingLongitude1'], line['GRingLongitude2'], line['GRingLongitude3'], line['GRingLongitude4'], line['GRingLongitude1']])
+        yy0  = np.array([line['GRingLatitude1'] , line['GRingLatitude2'] , line['GRingLatitude3'] , line['GRingLatitude4'] , line['GRingLatitude1']])
+
+        if (abs(xx0[0]-xx0[1])>180.0) | (abs(xx0[0]-xx0[2])>180.0) | \
+           (abs(xx0[0]-xx0[3])>180.0) | (abs(xx0[1]-xx0[2])>180.0) | \
+           (abs(xx0[1]-xx0[3])>180.0) | (abs(xx0[2]-xx0[3])>180.0):
+
+            xx0[xx0<0.0] += 360.0
+
+        xx = xx0[:-1]
+        yy = yy0[:-1]
+        center_lon = xx.mean()
+        center_lat = yy.mean()
+
+        # second attempt to find the center point of MODIS granule
+        # +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+        proj_tmp   = ccrs.Orthographic(central_longitude=center_lon, central_latitude=center_lat)
+        LonLat_tmp = proj_tmp.transform_points(proj_ori, xx, yy)[:, [0, 1]]
+        center_xx  = LonLat_tmp[:, 0].mean(); center_yy = LonLat_tmp[:, 1].mean()
+        center_lon, center_lat = proj_ori.transform_point(center_xx, center_yy, proj_tmp)
+        # ---------------------------------------------------------------------
+
+        proj_new = ccrs.Orthographic(central_longitude=center_lon, central_latitude=center_lat)
+        LonLat_in = proj_new.transform_points(proj_ori, lon, lat)[:, [0, 1]]
+        LonLat_modis  = proj_new.transform_points(proj_ori, xx0, yy0)[:, [0, 1]]
+
+        ax = plt.axes(projection=proj_new)
+        ax.set_global()
+        ax.stock_img()
+        ax.coastlines(color='gray', lw=0.2)
+        title = RENAME_MODIS(data[i]['GranuleID'].decode('UTF-8'))
+        date_s = title.split('.')[1][1:]
+        new_date_s = '%s-%s-%s' % (date_s[:4], date_s[4:6], date_s[6:])
+        ax.set_title(new_date_s, fontsize=16)
+
+        modis_granule  = mpl_path.Path(LonLat_modis, closed=True)
+        pointsIn       = modis_granule.contains_points(LonLat_in)
+        percentIn      = float(pointsIn.sum()) / float(pointsIn.size) * 100.0
+        if (percentIn > 0):
+            patch = patches.PathPatch(modis_granule, facecolor='g', edgecolor='g', alpha=0.4, lw=0.2)
+        else:
+            patch = patches.PathPatch(modis_granule, facecolor='k', edgecolor='k', alpha=0.2, lw=0.2)
+
+        cs = ax.scatter(lon[::20], lat[::20], transform=ccrs.Geodetic(), s=0.01, c='k', cmap='jet', alpha=0.5)
+        # ax.scatter(xx.mean(), yy.mean(), marker='*', transform=ccrs.Geodetic(), s=6, c='r')
+        # ax.scatter(center_lon, center_lat, marker='*', transform=ccrs.Geodetic(), s=6, c='b')
+        ax.add_patch(patch)
+        # plt.colorbar(cs, shrink=0.6)
+        plt.savefig('%s.png' % '.'.join(title.split('.')[:-1]))
+        plt.close()
+
+    # ---------------------------------------------------------------------
+
+def TEST_EARTHVIEW(date):
+
+    date_s = datetime.datetime.strftime(date, '%Y-%m-%d')
+
+    hsk = READ_ICT_HSK(date)
+    tmhr = (hsk.data['Start_UTC']/3600.0)
+    lon  = hsk.data['Longitude']
+    lat  = hsk.data['Latitude']
+
+    for satID in ['aqua', 'terra']:
+        data = FIND_MODIS(date, tmhr, lon, lat, satID=satID, tmhr_range=[20.0, 23.5])
+        EARTH_VIEW_TEST(data, tmhr, lon, lat)
+
+def TEST_MODIS():
+    import h5py
+
+    namePattern = 'MOD*.A20140911.2025*.hdf'
+    modis1 = MODIS_L2(namePattern)
+
+    namePattern = 'MOD*.A20140911.2200*.hdf'
+    modis2 = MODIS_L2(namePattern)
+
+    f = h5py.File('/Users/hoch4240/Chen/work/01_ARISE/albedo/lrt_prep_20140911.h5', 'r+')
+    lon = f['lon'][...]
+    lat = f['lat'][...]
+    tmhr = f['tmhr'][...]
+
+    modis1.COLLOCATE(lon[tmhr<21.6], lat[tmhr<21.6])
+    modis2.COLLOCATE(lon[tmhr>=21.6], lat[tmhr>=21.6])
+
+    cot_mod = np.append(modis1.cot_collo, modis2.cot_collo)
+    cer_mod = np.append(modis1.cer_collo, modis2.cer_collo)
+    print(modis1.cot_collo.shape)
+    print(modis2.cot_collo.shape)
+    exit()
+
+    logic = (cot_mod<0.0) | (cot_mod>1000.0) | (cer_mod<4.0) | (cer_mod>24.0)
+    cot_mod[logic] = 0.0
+    cer_mod[logic] = 4.0
+
+    f['cot_mod'] = cot_mod
+    f['cer_mod'] = cer_mod
+    f['logic_mod'] = np.logical_not(logic)
+
+    f.close()
+    # ---------------------------------------------------------------------
+
 if __name__ == '__main__':
 
+    # WORLDVIEW_DOWNLOAD()
+    # exit()
 
     import matplotlib as mpl
     import matplotlib.pyplot as plt
     from matplotlib import rcParams
     import matplotlib.patches as patches
+    from matplotlib.ticker import FixedLocator
+    import cartopy.crs as ccrs
 
     TEST_READ()
+    # TEST_MODIS()
+    exit()
+
+    date = datetime.datetime(2014, 9, 17)
+    TEST_EARTHVIEW(date)
