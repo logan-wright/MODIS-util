@@ -374,7 +374,7 @@ class MODIS_L2:
                 5.6. self.cer_collo
     """
 
-    def __init__(self, namePattern, vnameExtra='', fdir='/Users/hoch4240/Chen/mygit/MODIS-util/data/allData/6'):
+    def __init__(self, namePattern, vnameExtra='', fdir='/Users/hoch4240/Chen/mygit/MODIS-util/data/allData/6', copFlag=None):
 
         fnames = sorted(glob.glob('%s/%s' % (fdir, namePattern)))
         if len(fnames) != 2:
@@ -392,10 +392,21 @@ class MODIS_L2:
 
         fname_cld = fnames[1]
         f_cld = SD(fname_cld, SDC.READ)
-        vname_cot = 'Cloud_Optical_Thickness' + vnameExtra
-        self.cot = f_cld.select(vname_cot)[:] * f_cld.select(vname_cot).attributes()['scale_factor']
-        vname_cer = 'Cloud_Effective_Radius' + vnameExtra
-        self.cer = f_cld.select(vname_cer)[:] * f_cld.select(vname_cer).attributes()['scale_factor']
+
+        vname_ctp = 'Cloud_Phase_Optical_Properties' + vnameExtra
+        self.ctp  = np.int_(f_cld.select(vname_ctp)[:] * f_cld.select(vname_ctp).attributes()['scale_factor'])
+
+        if copFlag == None:
+            vname_cot = 'Cloud_Optical_Thickness' + vnameExtra
+            self.cot = f_cld.select(vname_cot)[:] * f_cld.select(vname_cot).attributes()['scale_factor']
+            vname_cer = 'Cloud_Effective_Radius' + vnameExtra
+            self.cer = f_cld.select(vname_cer)[:] * f_cld.select(vname_cer).attributes()['scale_factor']
+        else:
+            vname_cot = 'Cloud_Optical_Thickness_%s' % (copFlag) + vnameExtra
+            self.cot = f_cld.select(vname_cot)[:] * f_cld.select(vname_cot).attributes()['scale_factor']
+            vname_cer = 'Cloud_Effective_Radius_%s' % (copFlag) + vnameExtra
+            self.cer = f_cld.select(vname_cer)[:] * f_cld.select(vname_cer).attributes()['scale_factor']
+
         f_cld.end()
 
     def COLLOCATE(self, lon_in, lat_in):
@@ -408,6 +419,7 @@ class MODIS_L2:
         self.lat_domain = self.lat[logic].ravel()
         self.cot_domain = self.cot[logic].ravel()
         self.cer_domain = self.cer[logic].ravel()
+        self.ctp_domain = self.ctp[logic].ravel()
 
         points = np.array(list(zip(self.lon_domain, self.lat_domain)))
 
@@ -415,6 +427,7 @@ class MODIS_L2:
         self.lat_collo = lat_in
         self.cot_collo = interpolate.griddata(points, self.cot_domain, (lon_in, lat_in), method='linear')
         self.cer_collo = interpolate.griddata(points, self.cer_domain, (lon_in, lat_in), method='linear')
+        self.ctp_collo = interpolate.griddata(points, self.ctp_domain, (lon_in, lat_in), method='nearest')
 
 def WORLDVIEW_DOWNLOAD():
 
@@ -525,6 +538,7 @@ def TEST_DOWNLOAD():
         # DOWNLOAD_MODIS(ftp_init, fdirOut='data/allData/6')
 
 def TEST_READ():
+
     date = datetime.datetime(2014, 9, 11)
 
     # hsk  = READ_ICT_HSK(date, tmhr_range=[20.4167, 20.5])
@@ -552,8 +566,10 @@ def TEST_READ():
     # namePattern = 'MOD*.A20140911.2200*.hdf'
     # namePattern = 'MYD*.A20140911.2045*.hdf'
     # namePattern = 'MYD*.A20140911.2220*.hdf'
-    modis = MODIS_L2(namePattern)
+    modis = MODIS_L2(namePattern, copFlag='PCL')
     modis.COLLOCATE(hsk.data['Longitude'], hsk.data['Latitude'])
+    modis0 = MODIS_L2(namePattern)
+    modis0.COLLOCATE(hsk.data['Longitude'], hsk.data['Latitude'])
 
     # +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
     # proj = ccrs.PlateCarree()
@@ -571,6 +587,9 @@ def TEST_READ():
     # cs1 = ax1.scatter(modis.lon_domain, modis.lat_domain, c=modis.cot_domain, s=0.0, vmin=0.0, vmax=20.0, cmap='jet', alpha=1.0, transform=proj)
     # ax1.scatter(hsk.data['Longitude'], hsk.data['Latitude'], c='k', s=0.8, alpha=0.8, transform=proj)
 
+    # ax1.scatter(modis.lon_domain, modis.lat_domain, c=modis.ctp_domain, vmin=0.0, vmax=4.0, cmap='gist_ncar', alpha=1.0, lw=0.0)
+    # cs1 = ax1.scatter(modis.lon_domain, modis.lat_domain, c=modis.ctp_domain, s=0.0, vmin=0.0, vmax=4.0, cmap='gist_ncar', alpha=1.0, lw=0.0)
+    modis0.cot_domain[modis0.cot_domain<0.0] = np.nan
     ax1.scatter(modis.lon_domain, modis.lat_domain, c=modis.cot_domain, vmin=0.0, vmax=20.0, cmap='jet', alpha=0.4, lw=0.0)
     cs1 = ax1.scatter(modis.lon_domain, modis.lat_domain, c=modis.cot_domain, s=0.0, vmin=0.0, vmax=20.0, cmap='jet', alpha=1.0, lw=0.0)
     ax1.scatter(modis.lon_collo, modis.lat_collo, c='k', s=1.8, alpha=0.8, lw=0.0)
