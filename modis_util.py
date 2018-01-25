@@ -403,33 +403,61 @@ class MODIS_L2:
             self.cot = f_cld.select(vname_cot)[:] * f_cld.select(vname_cot).attributes()['scale_factor']
             vname_cer = 'Cloud_Effective_Radius' + vnameExtra
             self.cer = f_cld.select(vname_cer)[:] * f_cld.select(vname_cer).attributes()['scale_factor']
+
+            vname_cot     = 'Cloud_Optical_Thickness_PCL' + vnameExtra
+            self.cot_pcl  = f_cld.select(vname_cot)[:] * f_cld.select(vname_cot).attributes()['scale_factor']
+            vname_cer     = 'Cloud_Effective_Radius_PCL' + vnameExtra
+            self.cer_pcl  = f_cld.select(vname_cer)[:] * f_cld.select(vname_cer).attributes()['scale_factor']
+
         else:
             vname_cot = 'Cloud_Optical_Thickness_%s' % (copFlag) + vnameExtra
             self.cot = f_cld.select(vname_cot)[:] * f_cld.select(vname_cot).attributes()['scale_factor']
             vname_cer = 'Cloud_Effective_Radius_%s' % (copFlag) + vnameExtra
             self.cer = f_cld.select(vname_cer)[:] * f_cld.select(vname_cer).attributes()['scale_factor']
 
+            vname_cot     = 'Cloud_Optical_Thickness_%s_PCL' % (copFlag) + vnameExtra
+            self.cot_pcl  = f_cld.select(vname_cot)[:] * f_cld.select(vname_cot).attributes()['scale_factor']
+            vname_cer     = 'Cloud_Effective_Radius_%s_PCL' % (copFlag) + vnameExtra
+            self.cer_pcl  = f_cld.select(vname_cer)[:] * f_cld.select(vname_cer).attributes()['scale_factor']
+
         f_cld.end()
 
-    def COLLOCATE(self, lon_in, lat_in):
+    def COLLOCATE(self, lon_in, lat_in, tmhr_in=None):
 
         lon_in[lon_in<0.0] += 360.0
         logic = (self.lon>(lon_in.min()-0.2)) & (self.lon<(lon_in.max()+0.2)) & \
                 (self.lat>(lat_in.min()-0.2)) & (self.lat<(lat_in.max()+0.2))
 
-        self.lon_domain = self.lon[logic].ravel()
-        self.lat_domain = self.lat[logic].ravel()
-        self.cot_domain = self.cot[logic].ravel()
-        self.cer_domain = self.cer[logic].ravel()
-        self.ctp_domain = self.ctp[logic].ravel()
+        self.lon_domain     = self.lon[logic].ravel()
+        self.lat_domain     = self.lat[logic].ravel()
+        self.cot_domain     = self.cot[logic].ravel()
+        self.cer_domain     = self.cer[logic].ravel()
+        self.cot_pcl_domain = self.cot_pcl[logic].ravel()
+        self.cer_pcl_domain = self.cer_pcl[logic].ravel()
+        self.ctp_domain     = self.ctp[logic].ravel()
+
+        self.cot_domain_all = self.cot_domain.copy()
+        self.cer_domain_all = self.cer_domain.copy()
+        logic = ((self.cot_domain<0.0)&(self.cot_pcl_domain>0.0)) & ((self.cer_domain<0.0)&(self.cer_pcl_domain>0.0))
+        self.cot_domain_all[logic] = self.cot_pcl_domain[logic]
+        self.cer_domain_all[logic] = self.cer_pcl_domain[logic]
 
         points = np.array(list(zip(self.lon_domain, self.lat_domain)))
 
-        self.lon_collo = lon_in
-        self.lat_collo = lat_in
-        self.cot_collo = interpolate.griddata(points, self.cot_domain, (lon_in, lat_in), method='linear')
-        self.cer_collo = interpolate.griddata(points, self.cer_domain, (lon_in, lat_in), method='linear')
-        self.ctp_collo = interpolate.griddata(points, self.ctp_domain, (lon_in, lat_in), method='nearest')
+        self.lon_collo  = lon_in
+        self.lat_collo  = lat_in
+        if tmhr_in is not None:
+            self.tmhr_collo = tmhr_in
+
+        self.cot_collo     = interpolate.griddata(points, self.cot_domain    , (lon_in, lat_in), method='linear')
+        self.cer_collo     = interpolate.griddata(points, self.cer_domain    , (lon_in, lat_in), method='linear')
+        self.cot_pcl_collo = interpolate.griddata(points, self.cot_pcl_domain, (lon_in, lat_in), method='linear')
+        self.cer_pcl_collo = interpolate.griddata(points, self.cer_pcl_domain, (lon_in, lat_in), method='linear')
+
+        self.cot_collo_all = interpolate.griddata(points, self.cot_domain_all, (lon_in, lat_in), method='linear')
+        self.cer_collo_all = interpolate.griddata(points, self.cer_domain_all, (lon_in, lat_in), method='linear')
+
+        self.ctp_collo      = interpolate.griddata(points, self.ctp_domain    , (lon_in, lat_in), method='nearest')
 
 if __name__ == '__main__':
 
