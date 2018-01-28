@@ -365,15 +365,26 @@ class MODIS_L2:
         a class object that contains:
             1. self.lon
             2. self.lat
-            3. self.cot
-            4. self.cer
-            5. self.COLLOCATE(lon_in, lat_in):
-                5.1. self.lon_domain
-                5.2. self.lat_domain
-                5.3. self.lon_collo
-                5.4. self.lat_collo
-                5.5. self.cot_collo
-                5.6. self.cer_collo
+            3. self.ctp: cloud thermodynamic phase
+            4. self.cot
+            5. self.cer
+            6. self.cot_pcl
+            7. self.cer_pcl
+            8. self.COLLOCATE(lon_in, lat_in):
+                8.1. self.lon_domain
+                8.2. self.lat_domain
+                8.3. self.cot_domain
+                8.4. self.cer_domain
+                8.5. self.cot_pcl_domain
+                8.6. self.cer_pcl_domain
+                8.7 . self.lon_collo
+                8.8 . self.lat_collo
+                8.9 . self.cot_collo
+                8.10. self.cer_collo
+                8.11. self.cot_pcl_collo
+                8.12. self.cer_pcl_collo
+                8.13. self.cot_collo_all
+                8.14. self.cer_collo_all
     """
 
     def __init__(self, namePattern, vnameExtra='', fdir='/Users/hoch4240/Chen/mygit/MODIS-util/data/allData/6', copFlag=None):
