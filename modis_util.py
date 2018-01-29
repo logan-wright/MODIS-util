@@ -16,6 +16,12 @@ import cartopy.crs as ccrs
 import ftplib
 from pyhdf.SD import SD, SDC
 from scipy import interpolate
+import matplotlib as mpl
+import matplotlib.pyplot as plt
+from matplotlib.ticker import FixedLocator
+from matplotlib import rcParams
+import matplotlib.patches as patches
+import cartopy.crs as ccrs
 
 def READ_GEOMETA(date, satID='aqua', fdir='/Users/hoch4240/Chen/mygit/MODIS-util/data/geoMeta/6'):
 
