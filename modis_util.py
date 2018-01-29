@@ -358,7 +358,7 @@ class MODIS_L2:
     """
     input:
         namePattern: e.g. MOD*.A20140911.2025*.hdf
-        vnameExtra: default is ''
+        vnameExtra: default is '', can be "1621", "16" etc.
         fdir: the data directory
 
     output:
@@ -377,14 +377,16 @@ class MODIS_L2:
                 8.4. self.cer_domain
                 8.5. self.cot_pcl_domain
                 8.6. self.cer_pcl_domain
-                8.7 . self.lon_collo
-                8.8 . self.lat_collo
-                8.9 . self.cot_collo
-                8.10. self.cer_collo
-                8.11. self.cot_pcl_collo
-                8.12. self.cer_pcl_collo
-                8.13. self.cot_collo_all
-                8.14. self.cer_collo_all
+                8.7. self.ctp_domain
+                8.8 . self.lon_collo
+                8.9 . self.lat_collo
+                8.10. self.cot_collo
+                8.11. self.cer_collo
+                8.12. self.cot_pcl_collo
+                8.13. self.cer_pcl_collo
+                8.14. self.cot_collo_all
+                8.15. self.cer_collo_all
+                8.16. self.ctp_collo
     """
 
     def __init__(self, namePattern, vnameExtra='', fdir='/Users/hoch4240/Chen/mygit/MODIS-util/data/allData/6', copFlag=None):
